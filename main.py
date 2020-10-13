@@ -4,7 +4,7 @@ import pandas as pd
 import networkx as nx
 import numpy as np
 import matplotlib.pyplot as plt
-
+from mpl_toolkits.basemap import Basemap
 
 df : pd.DataFrame = pd.read_excel('Export_GTF_IEA.XLS')
 df = df[:195]
@@ -13,6 +13,7 @@ verticies : pd.DataFrame = verticies[(verticies['Exit'] != 'Liquefied Natural Ga
 
 G = nx.DiGraph()
 G.add_edges_from(verticies.to_numpy())
+
 
 class Coordinates:
 
@@ -25,5 +26,8 @@ class Coordinates:
             raise KeyError(f"No such country {name}")
         return tuple(data_point[['longitude', 'latitude']].values.reshape(2))
 
-nx.draw(G, pos=Coordinates(), with_labels=True, font_weight='bold')
+
+m = Basemap()
+m.fillcontinents()
+nx.draw(G, pos=Coordinates(), with_labels=True)
 plt.show()
