@@ -11,11 +11,10 @@ from locations import Coordinates
 df : pd.DataFrame = pd.read_excel('Export_GTF_IEA.XLS')
 df = df[:195]
 df : pd.DataFrame = df[(df['Exit'] != 'Liquefied Natural Gas') & (df['Entry'] != 'Liquefied Natural Gas')]
-verticies : pd.DataFrame = df[['Exit', 'Entry']]
 
 G = nx.DiGraph()
-G.add_edges_from(verticies.to_numpy())
-G.add_nodes_from(df['Borderpoint'])
+G.add_edges_from(df[['Exit', 'Borderpoint']].to_numpy())
+G.add_edges_from(df[['Borderpoint', 'Entry']].to_numpy())
 
 m = Basemap()
 m.fillcontinents()
