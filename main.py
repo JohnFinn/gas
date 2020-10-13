@@ -16,9 +16,10 @@ G.add_edges_from(verticies.to_numpy())
 G.add_nodes_from(df['Borderpoint'])
 
 class Coordinates:
-    failed = set()
 
     def __init__(self):
+        from locations import locations
+        self.locations = locations
         self.countries: pd.DataFrame = pd.read_csv('countries.csv', sep='\t')
         self.cities: pd.DataFrame = pd.read_csv('worldcities.csv')
 
@@ -32,10 +33,7 @@ class Coordinates:
         data_point = self.cities[self.cities['city_ascii'] == name]
         if len(data_point) != 0:
             return tuple(data_point.iloc[0][['lng', 'lat']].values.reshape(2))
-        # raise KeyError(f"No such country or city {name}")
-        Coordinates.failed.add(name)
-        return (0,0)
-
+        return self.locations[name]
 
 m = Basemap()
 m.fillcontinents()
