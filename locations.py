@@ -6,7 +6,7 @@ class Coordinates:
         self.countries: pd.DataFrame = pd.read_csv('countries.csv', sep='\t')
         self.cities: pd.DataFrame = pd.read_csv('worldcities.csv')
 
-    def __getitem__(self, name: str) -> (float, float):
+    def get_location(self, name: str) -> (float, float):
         data_point = self.countries[self.countries['name'] == name]
         if len(data_point) != 0:
             return tuple(data_point[['longitude', 'latitude']].values.reshape(2))
@@ -16,7 +16,7 @@ class Coordinates:
         data_point = self.cities[self.cities['city_ascii'] == name]
         if len(data_point) != 0:
             return tuple(data_point.iloc[0][['lng', 'lat']].values.reshape(2))
-        return locations[name][::-1]
+        return locations[name]
 
 locations = {
  'Oltingue': (47.4910127, 7.3914151),
