@@ -35,7 +35,7 @@ class GasFlow(Dataset):
         return Data(
             edge_index=self.edge_index,
             edge_attr=torch.tensor(self.df[date].replace('#N/A()', -1).values[np.newaxis].T),
-            x=torch.rand(len(self.idx_by_country), 1, dtype=torch.double), # no node features for now
+            x=torch.rand(len(self.idx_by_country), 1, dtype=torch.float), # no node features for now
             y=one_hot_encoded_month
         )
 
