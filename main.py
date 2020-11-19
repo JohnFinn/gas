@@ -14,7 +14,7 @@ from torch import nn
 import torch_geometric as tg
 from torch_geometric.data import Data
 import torch.nn.functional as F
-from torch_geometric.nn import GCNConv, NNConv
+from torch_geometric.nn import GCNConv, NNConv, EdgeConv
 
 from torch_geometric.datasets import Planetoid
 
@@ -24,7 +24,7 @@ from my_dataset import GasFlow
 dataset = GasFlow()
 
 
-class NN(torch.nn.Module):
+class DenseNet(torch.nn.Module):
 
     def __init__(self, edge_features: int, in_channels: int, out_channels: int):
         super().__init__()
@@ -39,20 +39,24 @@ class NN(torch.nn.Module):
     def forward(self, edge_attr):
         return self.net(edge_attr)
 
-
 class Net(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = NNConv(dataset.num_node_features, 3, nn = NN(1, dataset.num_node_features, 3), root_weight=False)
-        self.conv2 = NNConv(3, dataset.num_classes, nn = NN(1, 3, dataset.num_classes), root_weight=False)
+        self.conv1 = NNConv(dataset.num_node_features, 3, nn = DenseNet(1, dataset.num_node_features, 3), root_weight=False)
+        self.conv2 = NNConv(3, dataset.num_classes, nn = DenseNet(1, 3, dataset.num_classes), root_weight=False)
+        # self.linear = nn.Linear(85176, 12)
+        # self.conv1 = EdgeConv(DenseNet(1, dataset.num_node_features, 3))
 
     def forward(self, data):
-        x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
+        x, edge_index, edge_attr = data.x.unsqueeze(0), data.edge_index, data.edge_attr
 
         x = self.conv1(x, edge_index, edge_attr)
         x = F.relu(x)
         x = F.dropout(x, training=self.training)
         x = self.conv2(x, edge_index, edge_attr)
+        x = F.relu(x)
+        # x = F.dropout(x, training=self.training)
+        # x = self.linear(x.flatten())
 
         return F.softmax(x, dim=1)
 
@@ -75,8 +79,6 @@ _, pred = model(data).max(dim=1)
 # correct = int(pred[0].eq(data.y).sum().item())
 # acc = correct / int(data.sum())
 # print('Accuracy: {:.4f}'.format(acc))
-
-exit()
 
 # df : pd.DataFrame = pd.read_excel('Export_GTF_IEA.XLS')
 # df = df[:195]
