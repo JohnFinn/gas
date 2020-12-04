@@ -3,6 +3,7 @@ import networkx as nx
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime as dt
+import itertools
 
 
 def read_data():
@@ -26,4 +27,11 @@ def draw_correlation(data: pd.DataFrame):
     cb0 = fig.colorbar(mshow0)
     plt.show()
 
+def draw_all(data: pd.DataFrame, labels):
+    for (idx, row), label in zip(data.iterrows(), labels):
+        plt.plot(row.index, row, label=label)
+    plt.legend()
+    plt.show()
+
 draw_correlation(flow_by_month)
+draw_all(flow_by_month[:15], (df['Exit'] + ' -> ' + df['Entry'])[:15])
