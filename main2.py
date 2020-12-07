@@ -14,7 +14,7 @@ def read_data():
     return df
 
 df = read_data()
-flow_by_month = df[[c for c in df.columns if isinstance(c, dt.datetime)]].astype(float)
+flow_by_month = df[[c for c in df.columns if isinstance(c, dt.datetime)]].astype(float).dropna()
 
 
 def draw_correlation(data: pd.DataFrame):
