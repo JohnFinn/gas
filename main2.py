@@ -25,13 +25,20 @@ def draw_correlation(data: pd.DataFrame):
     axes[0].set_yticklabels(data.columns)
 
     cb0 = fig.colorbar(mshow0)
+    plt.gcf().set_size_inches(50, 30)
+    # plt.xticks(data.columns, rotation=45)
+    plt.savefig('correlation.png')
     plt.show()
 
 def draw_all(data: pd.DataFrame, labels):
     for (idx, row), label in zip(data.iterrows(), labels):
         plt.plot(row.index, row, label=label)
+    plt.xticks(row.index, rotation=45)
     plt.legend()
+    plt.gcf().set_size_inches(100, 70)
+    plt.savefig('flow.png')
     plt.show()
 
+# add months to x axis
 draw_correlation(flow_by_month)
-draw_all(flow_by_month[:15], (df['Exit'] + ' -> ' + df['Entry'])[:15])
+# draw_all(flow_by_month[:15], (df['Exit'] + ' -> ' + df['Entry'])[:15])
