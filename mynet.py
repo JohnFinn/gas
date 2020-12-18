@@ -8,12 +8,12 @@ class MyNet(nn.Module):
     def __init__(self):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(8, 16, bias=True),
-            nn.Tanh(),
-            nn.Linear(16, 8, bias=True),
-            nn.Tanh(),
+            nn.Linear(5, 8, bias=True),
+            nn.LeakyReLU(),
+            nn.Linear(8, 8, bias=True),
+            nn.LeakyReLU(),
             nn.Linear(8, 12, bias=True),
-            nn.Softmax()
+            nn.Softmax(dim=-1)
         )
 
     def forward(self, X):

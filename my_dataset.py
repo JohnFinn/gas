@@ -43,9 +43,7 @@ class GasFlow(Dataset):
     
     def __getitem__(self, idx: int):
         date = self.possible_dates[idx]
-        one_hot_encoded_month = torch.zeros(1, 12, dtype=torch.long)
-        one_hot_encoded_month[0, date.month] = 1
-        return torch.tensor(self.df[date].astype(float).values[np.newaxis].T), one_hot_encoded_month
+        return torch.tensor(self.df[date].astype(float).values), date.month - 1
 
 
     def __len__(self) -> int:

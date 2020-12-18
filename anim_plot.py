@@ -11,12 +11,13 @@ class GraphAnimation:
         self.hl1, = plt.plot([], [], label=label1)
         self.hl2, = plt.plot([], [], label=label2)
         plt.legend()
-        self.left, self.right = self.bottom, self.top = (-1, 1)
+        self.left, self.right = self.bottom, self.top = (0.001, 1)
+        plt.yscale('log')
 
     def update_xylim(self, x, y):
         self.left   = min(min(x) - 0.1, self.left)
         self.right  = max(max(x) + 0.1, self.right)
-        self.bottom = min(min(y) - 0.1, self.bottom)
+        self.bottom = min(min(y), self.bottom)
         self.top    = max(max(y) + 0.1, self.top)
         plt.xlim(left=self.left)
         plt.xlim(right=self.right)

@@ -34,7 +34,7 @@ dataset = GasFlow()
 # nx.draw(tg.utils.to_networkx(dataset[0]), pos=dataset.location_getter(), with_labels=True)
 # plt.show()
 
-pca = PCA(n_components=4)
+pca = PCA(n_components=5)
 data = dataset.df[[c for c in dataset.df.columns if isinstance(c, dt.datetime)]].astype(float).T
 pca.fit(data)
 
@@ -46,43 +46,40 @@ optimizer = torch.optim.Adam(my_net.parameters(), lr=0.01)
 
 train, test = torch.utils.data.random_split(dataset, (120, 20))
 
-batch_size=10
-train_loader = torch.utils.data.DataLoader(train, batch_size, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test, batch_size, shuffle=True)
+train_loader = torch.utils.data.DataLoader(train, 120)
+test_loader = torch.utils.data.DataLoader(test, 10)
 
-for epoch_no in range(100):
+for epoch_no in range(128):
 
     guessed_right_test = 0
     with torch.no_grad():
         test_loss = 0.0
         guessed_right_test = 0
-        for X, y in test_loader:
-            target = torch.argmax(y, axis=2)
+        for X, target in test_loader:
 
             criterion = torch.nn.CrossEntropyLoss()
-            transformed = torch.tensor([pca.transform(x.T) for x in X], dtype=torch.float32)
+            transformed = torch.tensor(pca.transform(X), dtype=torch.float32)
 
             predicted = my_net(transformed)
-            predicted_argmax = torch.argmax(predicted, axis=2)
+            predicted_argmax = torch.argmax(predicted, axis=1)
 
             guessed_right_test += (predicted_argmax == target).sum().item()
-            loss = criterion(predicted.reshape(test_loader.batch_size,12), torch.argmax(y, axis=2).flatten())
+            loss = criterion(predicted, target)
             test_loss += loss.item()
 
         test_loss /= len(test)
 
     guessed_right_train = 0
     train_loss = 0
-    for X, y in train_loader:
-        target = torch.argmax(y, axis=2)
+    for X, target in train_loader:
         criterion = torch.nn.CrossEntropyLoss()
-        transformed = torch.tensor([pca.transform(x.T) for x in X], dtype=torch.float32)
+        transformed = torch.tensor(pca.transform(X), dtype=torch.float32)
         predicted = my_net(transformed)
-        predicted_argmax = torch.argmax(predicted, axis=2)
+        predicted_argmax = torch.argmax(predicted, axis=1)
         
         guessed_right_train += (predicted_argmax == target).sum().item()
 
-        loss = criterion(predicted.reshape(train_loader.batch_size,12), torch.argmax(y, axis=2).flatten())
+        loss = criterion(predicted, target)
         train_loss += loss.item()
 
         optimizer.zero_grad()
