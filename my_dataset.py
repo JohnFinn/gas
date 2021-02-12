@@ -6,9 +6,9 @@ import torch
 from locations import Coordinates
 
 from torch.utils.data import Dataset
-# from torch_geometric.data.dataset import Dataset
-# import torch_geometric
-# from torch_geometric.data import Data
+from torch_geometric.data.dataset import Dataset as tgDataset
+import torch_geometric
+from torch_geometric.data import Data
 
 class GasFlow(Dataset):
 
@@ -30,17 +30,6 @@ class GasFlow(Dataset):
         self.edge_index = torch.tensor(self.df[['Exit', 'Entry']].replace(self.idx_by_country).values.T, dtype=torch.long)
 
 
-    # def __getitem__(self, idx: int) -> Data:
-    #     date = self.possible_dates[idx]
-    #     one_hot_encoded_month = torch.zeros(1, 12, dtype=torch.long)
-    #     one_hot_encoded_month[0, date.month] = 1
-    #     return Data(
-    #         edge_index=self.edge_index,
-    #         edge_attr=torch.tensor(self.df[date].replace('#N/A()', -1).values[np.newaxis].T),
-    #         x=torch.rand(len(self.idx_by_country), 1, dtype=torch.float), # no node features for now
-    #         y=one_hot_encoded_month
-    #     )
-    
     def __getitem__(self, idx: int):
         date = self.possible_dates[idx]
         return torch.tensor(self.df[date].astype(float).values), date.month - 1
@@ -55,3 +44,22 @@ class GasFlow(Dataset):
             def __getitem__(_not_this_self, idx: int):
                 return self.coordinates.get_location(self.country_by_idx[idx])
         return Getter()
+
+
+class GasFlowGraphs(tgDataset):
+
+    def __init__(self):
+        super().__init__()
+        self.dataset_ = GasFlow()
+
+    def __len__(self):
+        return len(self.dataset_)
+
+    def __getitem__(self, idx: int) -> Data:
+        date = self.dataset_.possible_dates[idx]
+        return Data(
+            edge_index=self.dataset_.edge_index,
+            edge_attr=torch.tensor(self.dataset_.df[date].replace('#N/A()', -1).values[np.newaxis].T, dtype=torch.float),
+            x=torch.ones(len(self.dataset_.idx_by_country),1, dtype=torch.float), # no node features
+            y=(date.month - 1)
+        )

@@ -24,17 +24,26 @@ from torch_geometric.nn import GCNConv, NNConv, EdgeConv
 # from torch_geometric.datasets import Planetoid
 
 # dataset = Planetoid(root='/tmp/Cora', name='Cora')
-from my_dataset import GasFlow
+from my_dataset import GasFlow, GasFlowGraphs
+
+
 
 dataset = GasFlow()
+graph_dataset = GasFlowGraphs()
+train, test = torch.utils.data.random_split(dataset, (120, 20))
+train_graph, test_graph = torch.utils.data.random_split(graph_dataset, (120, 20))
 
-# ax = plt.axes(projection=ccrs.PlateCarree())
-# ax.add_feature(cfeature.NaturalEarthFeature('physical', 'land', '50m', edgecolor='face', facecolor='#e6e6e6'), zorder=0)
 
-# nx.draw(tg.utils.to_networkx(dataset[0]), pos=dataset.location_getter(), with_labels=True)
-# plt.show()
+ax = plt.axes(projection=ccrs.PlateCarree())
+ax.add_feature(cfeature.NaturalEarthFeature('physical', 'land', '50m', edgecolor='face', facecolor='#e6e6e6'), zorder=0)
 
-pca = PCA(n_components=5)
+G = tg.utils.to_networkx(graph_dataset[0])
+# G = nx.relabel_nodes(G, graph_dataset.dataset_.country_by_idx)
+nx.draw(G, pos=graph_dataset.dataset_.location_getter(), labels=dataset.country_by_idx, with_labels=True)
+plt.show()
+exit()
+
+pca = PCA(n_components=100)
 data = dataset.df[[c for c in dataset.df.columns if isinstance(c, dt.datetime)]].astype(float).T
 pca.fit(data)
 
@@ -44,12 +53,11 @@ my_net = MyNet()
 
 optimizer = torch.optim.Adam(my_net.parameters(), lr=0.01)
 
-train, test = torch.utils.data.random_split(dataset, (120, 20))
 
-train_loader = torch.utils.data.DataLoader(train, 120)
+train_loader = torch.utils.data.DataLoader(train, 64)
 test_loader = torch.utils.data.DataLoader(test, 10)
 
-for epoch_no in range(128):
+for epoch_no in range(256):
 
     guessed_right_test = 0
     with torch.no_grad():
