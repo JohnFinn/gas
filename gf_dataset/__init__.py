@@ -2,6 +2,7 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import torch
+from pathlib import Path
 
 from locations import Coordinates
 
@@ -15,7 +16,7 @@ class GasFlow(Dataset):
     num_classes = 12
 
     def __init__(self):
-        df : pd.DataFrame = pd.read_excel('Export_GTF_IEA.XLS')
+        df : pd.DataFrame = pd.read_excel(Path(__file__).with_name('Export_GTF_IEA.XLS'))
         df = df.replace('#N/A()', None)
         df = df[:195].dropna()
         self.df : pd.DataFrame = df[(df['Exit'] != 'Liquefied Natural Gas') & (df['Entry'] != 'Liquefied Natural Gas')]

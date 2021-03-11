@@ -1,10 +1,11 @@
 import pandas as pd
+from pathlib import Path
 
 class Coordinates:
 
     def __init__(self):
-        self.countries: pd.DataFrame = pd.read_csv('countries.csv', sep='\t')
-        self.cities: pd.DataFrame = pd.read_csv('worldcities.csv')
+        self.countries: pd.DataFrame = pd.read_csv(Path(__file__).with_name('countries.csv'), sep='\t')
+        self.cities: pd.DataFrame = pd.read_csv(Path(__file__).with_name('worldcities.csv'))
 
     def get_location(self, name: str) -> (float, float):
         data_point = self.countries[self.countries['name'] == name]
