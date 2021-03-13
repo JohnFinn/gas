@@ -37,31 +37,27 @@ optimizer = torch.optim.Adam(mynet.parameters(), lr=0.001)
 
 for epoch in range(1000):
 
-    guessed_right_train = 0
     train_loss = 0
     for batch in train_loader:
         # criterion = torch.nn.MSELoss()
         predicted = mynet(batch)
 
-        loss = cycle_loss(predicted.flatten(), batch.y.float(), 12)
+        loss = cycle_loss(predicted.flatten(), batch.y[:,1].float(), 12)
         # loss = criterion(predicted, batch.y.float())
         train_loss += loss.item()
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
+    train_loss /= len(train_loader)
 
-    guessed_right_test = 0
     with torch.no_grad():
         test_loss = 0.0
-        guessed_right_test = 0
         for batch in test_loader:
             predicted = mynet(batch)
 
-            loss = cycle_loss(predicted.flatten(), batch.y.float(), 12)
+            loss = cycle_loss(predicted.flatten(), batch.y[:,1].float(), 12)
             test_loss += loss.item()
+        test_loss /= len(test_loader)
 
     animator.add(train_loss, test_loss)
-
-
-animator.process.stdin.close()

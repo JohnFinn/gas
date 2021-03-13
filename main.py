@@ -4,13 +4,14 @@ import pandas as pd
 import networkx as nx
 import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.tree import DecisionTreeRegressor
 import matplotlib.pyplot as plt
 import datetime as dt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
 from locations import Coordinates
-from models import MyNet
+from models import MyNet, cycle_loss
 from anim_plot import AnimPlot
 
 import torch
@@ -37,7 +38,7 @@ G = tg.utils.to_networkx(graph_dataset[0])
 nx.draw(G, pos=graph_dataset.dataset_.location_getter(), labels=dataset.country_by_idx, with_labels=True)
 plt.show()
 
-pca = PCA(n_components=100)
+pca = PCA(n_components=16)
 data = dataset.df[[c for c in dataset.df.columns if isinstance(c, dt.datetime)]].astype(float).T
 pca.fit(data)
 
@@ -45,13 +46,13 @@ pca.fit(data)
 animator = AnimPlot('train loss', 'test loss')
 my_net = MyNet()
 
-optimizer = torch.optim.Adam(my_net.parameters(), lr=0.01)
+optimizer = torch.optim.Adam(my_net.parameters(), lr=0.0001)
 
 
 train_loader = torch.utils.data.DataLoader(train, 64)
 test_loader = torch.utils.data.DataLoader(test, 10)
 
-for epoch_no in range(256):
+for epoch_no in range(10000):
 
     with torch.no_grad():
         test_loss = 0.0
@@ -60,24 +61,24 @@ for epoch_no in range(256):
             transformed = torch.tensor(pca.transform(X), dtype=torch.float32)
 
             predicted = my_net(transformed)
+            loss = cycle_loss(predicted.flatten(), target[:,1].float(), 12)
 
             test_loss += loss.item()
 
-        test_loss /= len(test)
+        test_loss /= len(test_loader)
 
     train_loss = 0
     for X, target in train_loader:
         transformed = torch.tensor(pca.transform(X), dtype=torch.float32)
         predicted = my_net(transformed)
 
-        loss = criterion(predicted, target)
+        loss = cycle_loss(predicted.flatten(), target[:,1].float(), 12)
         train_loss += loss.item()
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-    train_loss /= len(train)
-
+    train_loss /= len(train_loader)
 
     animator.add(train_loss, test_loss)
