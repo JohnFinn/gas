@@ -11,12 +11,14 @@ from torch_geometric.data.dataset import Dataset as tgDataset
 import torch_geometric
 from torch_geometric.data import Data
 
+# https://www.iea.org/reports/gas-trade-flows
+
 class GasFlow(Dataset):
 
     num_classes = 12
 
     def __init__(self):
-        df : pd.DataFrame = pd.read_excel(Path(__file__).with_name('Export_GTF_IEA.XLS'))
+        df : pd.DataFrame = pd.read_excel(Path(__file__).with_name('Export_GTF_IEA.xls'))
         df = df.replace('#N/A()', None)
         df = df[:195].dropna()
         self.df : pd.DataFrame = df[(df['Exit'] != 'Liquefied Natural Gas') & (df['Entry'] != 'Liquefied Natural Gas')]
