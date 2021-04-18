@@ -58,7 +58,7 @@ class MyNet2(nn.Module):
             nn.Linear(8, 8, bias=True),
             nn.ReLU(),
             nn.Linear(8, 1, bias=True),
-            LambdaLayer(lambda batch: batch / 4),
+            # LambdaLayer(lambda batch: batch / 1000),
             nn.Sigmoid(),
             LambdaLayer(lambda batch: batch * 11)
         )

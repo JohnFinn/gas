@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import networkx as nx
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import datetime as dt
