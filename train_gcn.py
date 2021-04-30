@@ -16,19 +16,20 @@ from matplotlib import pyplot
 import matplotlib
 import seaborn as sns
 import datetime as dt
-import cartopy.crs as ccrs
-import cartopy.feature as cfeature
 
 from locations import Coordinates
 from anim_plot import AnimPlot
-from draw_tables import draw_tables
 from models import MyNet2, MyNet, cycle_loss, cycle_dst2
 
 
 graph_dataset = GasFlowGraphs()
 torch.manual_seed(1) # reproducibility
 mynet = MyNet2()
+
+# good seeds: 4, 6,
+torch.manual_seed(100)
 train_graphs, test_graphs = torch.utils.data.random_split(graph_dataset, (len(graph_dataset) - 20, 20))
+# split = [(y.item(), m.item()) for (y, m), in map(lambda g: g.y, test_graphs)]
 
 train_loader = tg.data.DataLoader(train_graphs, batch_size=len(train_graphs))
 test_loader = tg.data.DataLoader(test_graphs, batch_size=len(test_graphs))
@@ -50,7 +51,7 @@ N = nxt_num()
 animator = AnimPlot('train loss', 'test loss', output=f'experiments/exp-1-{N}.png')
 
 def train_epochs():
-    for epoch in range(10000):
+    for epoch in range(500):
         train_loss = 0
         for batch in train_loader:
             # criterion = torch.nn.MSELoss()
@@ -93,8 +94,28 @@ ax3: matplotlib.axes.Axes
 ax4: matplotlib.axes.Axes
 fig, ((ax1, ax2), (ax3, ax4)) = pyplot.subplots(ncols=2, nrows=2, sharey=True)
 
-draw_tables(fig, ax1, ax2, mynet, train_loader, test_loader)
-draw_tables(fig, ax3, ax4, best, train_loader, test_loader)
+def draw_tables(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes, net: torch.nn.Module, data: tg.data.DataLoader):
+    table = np.full((13, 12), np.nan)
+    for batch in data:
+        predicted = net(batch)
+        Y = batch.y[:,0] - 2008
+        M = batch.y[:,1]
+        table[Y, M] = cycle_dst2(M.float(), predicted.flatten().detach().numpy(), 12) ** .5
+
+        mshow = ax.matshow(table, vmin=0, vmax=6)
+        ax.set_yticks(range(13))
+        ax.set_yticklabels(range(2008, 2021))
+
+    return mshow
+
+mshow = draw_tables(fig, ax1, mynet, train_loader)
+draw_tables(fig, ax2, mynet, test_loader)
+draw_tables(fig, ax3, best, train_loader)
+draw_tables(fig, ax4, best, test_loader)
+
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+fig.colorbar(mshow, cax=cbar_ax)
 
 ax1.title.set_text('last')
 ax3.title.set_text(f'best {min_test_epoch}')
