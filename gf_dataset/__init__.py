@@ -62,7 +62,7 @@ class GasFlowGraphs(tgDataset):
         date = self.dataset_.possible_dates[idx]
         return Data(
             edge_index=self.dataset_.edge_index,
-            edge_attr=torch.tensor(self.dataset_.df[date].replace('#N/A()', -1).values[np.newaxis].T, dtype=torch.float),
+            edge_attr=torch.tensor(self.dataset_.df[date].replace('#N/A()', -1).values[np.newaxis].T.astype(float), dtype=torch.float),
             x=torch.ones(len(self.dataset_.idx_by_country),1, dtype=torch.float), # no node features
             y=torch.tensor([[date.year, (date.month - 1)]])
         )
