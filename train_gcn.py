@@ -174,7 +174,7 @@ ax3: matplotlib.axes.Axes
 ax4: matplotlib.axes.Axes
 fig, ((ax1, ax2), (ax3, ax4)) = pyplot.subplots(ncols=2, nrows=2, sharey=True)
 
-def draw_tables(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes, net: torch.nn.Module, data: tg.data.DataLoader):
+def draw_tables(ax: matplotlib.axes.Axes, net: torch.nn.Module, data: tg.data.DataLoader):
     table = np.full((13, 12), np.nan)
     for batch in data:
         predicted = net(batch)
@@ -186,11 +186,10 @@ def draw_tables(fig: matplotlib.figure.Figure, ax: matplotlib.axes.Axes, net: to
     ax.set(yticks=range(13), yticklabels=range(2008, 2021))
     return mshow
 
-mshow = draw_tables(fig, ax1, mynet, train_loader)
-draw_tables(fig, ax2, mynet, test_loader)
-draw_tables(fig, ax3, best, train_loader)
-draw_tables(fig, ax4, best, test_loader)
-# draw_tables(fig, ax5, lambda data: decision_tree.predict(data))
+mshow = draw_tables(ax1, mynet, train_loader)
+draw_tables(ax2, mynet, test_loader)
+draw_tables(ax3, best, train_loader)
+draw_tables(ax4, best, test_loader)
 
 fig.subplots_adjust(right=0.8)
 cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
