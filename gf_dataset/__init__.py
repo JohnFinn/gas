@@ -25,7 +25,9 @@ class GasFlow(Dataset):
 
         self.coordinates : Coordinates = Coordinates()
 
-        self.idx_by_country = {name: idx for idx, name in enumerate(set(self.df['Entry']) | set(self.df['Exit']))}
+        # addition of sorted(...) fixes unreproducible behavior
+        # but this is strange, because whats the difference in what indexes to choose
+        self.idx_by_country = {name: idx for idx, name in enumerate(sorted(set(self.df['Entry']) | set(self.df['Exit'])))}
         self.country_by_idx = {idx: name for name, idx in self.idx_by_country.items()}
 
         self.possible_dates = [col for col in self.df if isinstance(col, datetime)]
