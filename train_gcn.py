@@ -192,6 +192,23 @@ def train_epochs():
 
 perf_profile = cProfile.Profile()
 
+class IntersectionFinder:
+
+    def __init__(self):
+        self.old = (None, None)
+
+    def intersects(self, a: float, b: float) -> bool:
+        old_a, old_b = self.old
+        self.old = a, b
+        if old_a is None:
+            return False
+        if a == b:
+            return True
+        return (old_a > old_b) != (a > b)
+
+
+intersections = IntersectionFinder()
+
 min_test_loss = float('inf')
 min_test_epoch = -1
 for epoch_no, train_loss in enumerate(train_epochs()):
@@ -207,6 +224,12 @@ for epoch_no, train_loss in enumerate(train_epochs()):
             min_test_loss = test_loss
             best = deepcopy(mynet)
             min_test_epoch = epoch_no
+        if intersections.intersects(train_loss, test_loss):
+            animator.mpl_proc.proxy_ax.scatter(epoch_no, train_loss, s=100, marker='x', color='#3d89be')
+
+
+
+
 
     # perf_profile.enable()
     animator.add(train_loss, test_loss)
