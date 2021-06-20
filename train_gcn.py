@@ -2,47 +2,46 @@
 import cProfile
 import pstats
 
-from gf_dataset import GasFlowGraphs
-from locations import Coordinates
-from models import MyNet2, MyNet, cycle_loss, cycle_dst2
+import random
+import os
+import datetime as dt
+from copy import copy, deepcopy
 
 import numpy as np
 import pandas as pd
 import networkx as nx
-import os
-from copy import copy, deepcopy
 from matplotlib import pyplot
 import matplotlib
 import seaborn as sns
-import datetime as dt
 
 import torch
 import torch_geometric as tg
 
 from sklearn.decomposition import PCA
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import GaussianNB
 
-from anim_plot import AnimPlot
 from mpl_proc import MplProc, ProxyObject
 
+from gf_dataset import GasFlowGraphs
+from locations import Coordinates
+from models import MyNet2, MyNet, cycle_loss, cycle_dst2
+
+def seed_all(seed):
+    print("[ Using Seed : ", seed, " ]")
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+seed_all(2)
 
 graph_dataset = GasFlowGraphs()
-torch.manual_seed(1) # reproducibility
-mynet = MyNet2()
-
-# good seeds: 4, 6,
-torch.manual_seed(100)
-train_graphs, test_graphs = torch.utils.data.random_split(graph_dataset, (len(graph_dataset) - 20, 20))
-# split = [(y.item(), m.item()) for (y, m), in map(lambda g: g.y, test_graphs)]
-
-train_loader = tg.data.DataLoader(train_graphs, batch_size=len(train_graphs))
-test_loader = tg.data.DataLoader(test_graphs, batch_size=len(test_graphs))
-
-optimizer = torch.optim.Adam(mynet.parameters(), lr=0.001)
-# lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
-# torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
-# optimizer = torch.optim.Adam(mynet.parameters(), lr=0.001)
-
 
 
 class Animator:
@@ -80,30 +79,42 @@ class Animator:
 
 animator = Animator()
 
+
 class FakeHline:
     def set(self, *args, **kwargs):
         pass
 
+
 class LineDrawer:
 
-    def __init__(self, ax: matplotlib.axes.Axes):
+    def __init__(self, *, ax: matplotlib.axes.Axes, kw_reg, kw_min, kw_train, kw_test):
         self.min_diff = float('inf')
         self.ax = ax
+        self.kw_reg = kw_reg
+        self.kw_min = kw_min
+        self.kw_train = kw_train
+        self.kw_test = kw_test
         self.min_train_hline, self.min_test_hline = FakeHline(), FakeHline()
 
     def append(self, *, train_loss: float, test_loss: float):
-        crt_diff = test_loss - train_loss
+        crt_diff = abs(test_loss - train_loss)
         if crt_diff < self.min_diff:
             self.min_diff = crt_diff
-            self.min_train_hline.set(color='gray', linewidth=0.3)
-            self.min_test_hline.set(color='gray', linewidth=0.3)
-            self.min_train_hline = self.ax.hlines(y=train_loss, xmin=300, xmax=400, linestyle=':')
-            self.min_test_hline = self.ax.hlines(y=test_loss, xmin=400, xmax=500)
+            self.min_train_hline.set(**self.kw_reg)
+            self.min_test_hline.set(**self.kw_reg)
+            self.min_train_hline = self.ax.hlines(**self.kw_train, **self.kw_min, y=train_loss)
+            self.min_test_hline = self.ax.hlines(**self.kw_test, **self.kw_min, y=test_loss)
         else:
-            self.ax.hlines(y=train_loss, xmin=300, xmax=400, linestyle=':', colors='gray', linewidth=0.3)
-            self.ax.hlines(y=test_loss, xmin=400, xmax=500, colors='gray', linewidth=0.3)
+            self.ax.hlines(**self.kw_reg, **self.kw_train, y=train_loss)
+            self.ax.hlines(**self.kw_reg, **self.kw_test, y=test_loss)
 
-lines = LineDrawer(ax=animator.mpl_proc.proxy_ax)
+
+lines = LineDrawer(ax=animator.mpl_proc.proxy_ax,
+                    kw_min = dict(),
+                    kw_reg = dict(linewidth=0.3, color='gray'),
+                    kw_train = dict(linestyle=':', xmin=300, xmax=400),
+                    kw_test = dict(xmin=400, xmax=500)
+        )
 
 for seed in range(20):
     # torch.manual_seed(seed)
@@ -116,12 +127,50 @@ for seed in range(20):
     predicted = decision_tree.predict(np.concatenate([ g.edge_attr.T for g in test_graphs ]))
     target = np.array([g.y[0,1].item() for g in test_graphs])
 
+    test_loss = cycle_loss(target, predicted, 12)
+    train_loss = cycle_loss(y, decision_tree.predict(X), 12)
+
+    if abs(test_loss - train_loss) < lines.min_diff:
+        train_loader = tg.data.DataLoader(train_graphs, batch_size=len(train_graphs))
+        test_loader = tg.data.DataLoader(test_graphs, batch_size=len(test_graphs))
+
     lines.append(
-        test_loss=cycle_loss(target, predicted, 12),
-        train_loss=cycle_loss(y, decision_tree.predict(X), 12)
+        test_loss=test_loss,
+        train_loss=train_loss
     )
 
+lines = LineDrawer(ax=animator.mpl_proc.proxy_ax,
+                    kw_min = dict(),
+                    kw_reg = dict(linewidth=0.3, color='gray'),
+                    kw_train = dict(linestyle=':', xmin=100, xmax=200),
+                    kw_test = dict(xmin=200, xmax=300)
+        )
 
+
+for seed in range(20):
+    train_graphs, test_graphs = torch.utils.data.random_split(graph_dataset, (len(graph_dataset) - 20, 20))
+    gnb = GaussianNB()
+    X = np.concatenate([ g.edge_attr.T for g in train_graphs ])
+    y = np.concatenate([ g.y for g in train_graphs ])[:,1]
+    gnb.fit(X, y)
+    predicted = gnb.predict(np.concatenate([ g.edge_attr.T for g in test_graphs ]))
+    target = np.array([g.y[0,1].item() for g in test_graphs])
+
+    lines.append(
+        test_loss=cycle_loss(target, predicted, 12),
+        train_loss=cycle_loss(y, gnb.predict(X), 12)
+    )
+
+mynet = MyNet2()
+
+# good seeds: 4, 6,
+train_graphs, test_graphs = torch.utils.data.random_split(graph_dataset, (len(graph_dataset) - 20, 20))
+train_loader = tg.data.DataLoader(train_graphs, batch_size=len(train_graphs))
+test_loader = tg.data.DataLoader(test_graphs, batch_size=len(test_graphs))
+
+optimizer = torch.optim.Adam(mynet.parameters(), lr=0.001)
+# lr_scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
+# torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
 def train_epochs():
     for epoch in range(500):
@@ -223,8 +272,8 @@ class StringRecord:
 
 class Reporter:
 
-    def __init__(self, directory: str):
-        self.directory = directory
+    def __init__(self, filename: str):
+        self.filename = filename
         self.records = []
 
     def append(self, record):
@@ -234,11 +283,8 @@ class Reporter:
         return '\n'.join([r.to_markdown() for r in self.records]) + '\n\n'
 
     def write(self):
-        cwd = os.getcwd()
-        os.chdir(self.directory)
-        with open(f'report3.md', 'at') as f:
+        with open(self.filename, 'at') as f:
             f.write(self.to_markdown())
-        os.chdir(cwd)
 
 
 def nxt_num() -> int:
@@ -251,15 +297,15 @@ def nxt_num() -> int:
 N = nxt_num()
 
 
-reporter = Reporter('experiments')
+reporter = Reporter('report4.md')
 reporter.append(StringRecord(f'# {N}'))
 reporter.append(StringRecord(f'''
 ```
 {mynet}
 ```
 '''))
-reporter.append(FigRecord(fig, 'exp-2', f'exp-2-{N}.png'))
-reporter.append(FigRecord(animator.mpl_proc.proxy_fig, 'exp-1', f'exp-1-{N}.png'))
+reporter.append(FigRecord(fig, 'exp-2', f'experiments/exp-2-{N}.png'))
+reporter.append(FigRecord(animator.mpl_proc.proxy_fig, 'exp-1', f'experiments/exp-1-{N}.png'))
 
 reporter.write()
 
