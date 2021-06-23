@@ -28,6 +28,7 @@ from mpl_proc import MplProc, ProxyObject
 from gf_dataset import GasFlowGraphs
 from locations import Coordinates
 from models import MyNet2, MyNet, cycle_loss, cycle_dst2
+from report import FigRecord, StringRecord, Reporter
 
 def seed_all(seed):
     print("[ Using Seed : ", seed, " ]")
@@ -39,7 +40,7 @@ def seed_all(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-seed_all(2)
+seed_all(11)
 
 graph_dataset = GasFlowGraphs()
 
@@ -271,44 +272,6 @@ ax1.title.set_text('last')
 ax3.title.set_text(f'best {min_test_epoch}')
 
 # pyplot.legend()
-
-class FigRecord:
-
-    def __init__(self, fig: matplotlib.figure.Figure, name: str, filename: str):
-        self.fig = fig
-        self.name = name
-        self.filename = filename
-
-    def to_markdown(self):
-        self.fig.savefig(self.filename)
-        return f'![{self.name}]({self.filename})'
-
-
-class StringRecord:
-
-    def __init__(self, string: str):
-        self.string = string
-
-    def to_markdown(self):
-        return self.string
-
-
-class Reporter:
-
-    def __init__(self, filename: str):
-        self.filename = filename
-        self.records = []
-
-    def append(self, record):
-        self.records.append(record)
-
-    def to_markdown(self):
-        return '\n'.join([r.to_markdown() for r in self.records]) + '\n\n'
-
-    def write(self):
-        with open(self.filename, 'at') as f:
-            f.write(self.to_markdown())
-
 
 def nxt_num() -> int:
     return sum((
