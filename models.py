@@ -8,7 +8,7 @@ import inspect
 from torch.functional import F
 
 
-def cycle_dst2(a, b, mod):
+def cycle_dst2(a, b):
     d = (a-b)
     return (((d - 6) % 12) - 6) ** 2
 
@@ -19,7 +19,7 @@ def cycle_tg_dst2(a: torch.Tensor, b: torch.Tensor):
     d = a - b
     return torch.tan(math.pi / 12 * d) ** 2
 
-def cycle_loss(a: torch.Tensor, b: torch.Tensor, mod: int) -> torch.TensorType:
+def cycle_loss(a: torch.Tensor, b: torch.Tensor) -> torch.TensorType:
     d = (a-b)
     return ((((d - 6) % 12) - 6) ** 2).mean()
 

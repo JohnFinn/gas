@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import Generator
 import random
 import os
 import sys
@@ -126,8 +127,8 @@ def train_gcn(seed, epochs, num_splits):
         predicted = decision_tree.predict(np.concatenate([ g.edge_attr.T for g in test_graphs ]))
         target = np.array([g.y[0,1].item() for g in test_graphs])
 
-        test_loss = cycle_loss(target, predicted, 12)
-        train_loss = cycle_loss(y, decision_tree.predict(X), 12)
+        test_loss = cycle_loss(target, predicted)
+        train_loss = cycle_loss(y, decision_tree.predict(X))
 
         if abs(test_loss - train_loss) < lines.min_diff:
             train_loader = tg.data.DataLoader(train_graphs, batch_size=len(train_graphs))
@@ -156,8 +157,8 @@ def train_gcn(seed, epochs, num_splits):
         target = np.array([g.y[0,1].item() for g in test_graphs])
 
         lines.append(
-            test_loss=cycle_loss(target, predicted, 12),
-            train_loss=cycle_loss(y, gnb.predict(X), 12)
+            test_loss=cycle_loss(target, predicted),
+            train_loss=cycle_loss(y, gnb.predict(X))
         )
 
     mynet = MyNet3()
@@ -178,12 +179,11 @@ def train_gcn(seed, epochs, num_splits):
                 # criterion = torch.nn.MSELoss()
                 predicted = mynet(batch)
 
-                loss = cycle_loss(predicted.flatten(), batch.y[:,1].float(), 12)
+                loss = cycle_loss(predicted.flatten(), batch.y[:,1].float())
                 # loss = criterion(predicted, batch.y.float())
                 train_loss += loss.item()
 
                 optimizer.zero_grad()
-                # here sth happens which leads to SIGSEGV at exit
                 loss.backward()
                 optimizer.step()
                 # lr_scheduler.step()
@@ -217,7 +217,7 @@ def train_gcn(seed, epochs, num_splits):
             for batch in test_loader:
                 predicted = mynet(batch)
 
-                loss = cycle_loss(predicted.flatten(), batch.y[:,1].float(), 12)
+                loss = cycle_loss(predicted.flatten(), batch.y[:,1].float())
                 test_loss += loss.item()
             test_loss /= len(test_loader)
             if test_loss < min_test_loss:
@@ -242,7 +242,7 @@ def train_gcn(seed, epochs, num_splits):
             predicted = net(batch)
             Y = batch.y[:,0] - 2008
             M = batch.y[:,1]
-            table[Y, M] = cycle_dst2(M.float(), predicted.flatten().detach().numpy(), 12) ** .5
+            table[Y, M] = cycle_dst2(M.float(), predicted.flatten().detach().numpy()) ** .5
 
         mshow = ax.matshow(table, vmin=0, vmax=6)
         ax.set(yticks=range(13), yticklabels=range(2008, 2021))
