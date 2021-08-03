@@ -35,8 +35,8 @@ from seed_all import seed_all
 
 class Animator:
 
-    def __init__(self):
-        self.mpl_proc = MplProc()
+    def __init__(self, mpl_proc: MplProc):
+        self.mpl_proc = mpl_proc
         self.mpl_proc.proxy_ax.set(ylim=(0, 20), xlim=(0, 10000))
 
         def init(objs):
@@ -94,6 +94,7 @@ class LineDrawer:
             self.ax.hlines(**self.kw_reg, **self.kw_train, y=train_loss)
             self.ax.hlines(**self.kw_reg, **self.kw_test, y=test_loss)
 
+
 @click.command()
 @click.option('--seed', default=0, help='seed to use everywhere')
 @click.option('--epochs', default=500, help='epochs to train')
@@ -103,9 +104,11 @@ def train_gcn(seed, epochs, num_splits):
     print("[ Using Seed : ", seed, " ]")
     seed_all(seed)
 
-    animator = Animator()
+    mpl_proc = MplProc()
+
+    animator = Animator(mpl_proc)
     graph_dataset = GasFlowGraphs()
-    lines = LineDrawer(ax=animator.mpl_proc.proxy_ax,
+    lines = LineDrawer(ax=mpl_proc.proxy_ax,
                        kw_min=dict(),
                        kw_reg=dict(linewidth=0.3, color='gray'),
                        kw_train=dict(linestyle=':', xmin=300, xmax=400),
@@ -135,7 +138,7 @@ def train_gcn(seed, epochs, num_splits):
             train_loss=train_loss
         )
 
-    lines = LineDrawer(ax=animator.mpl_proc.proxy_ax,
+    lines = LineDrawer(ax=mpl_proc.proxy_ax,
                         kw_min = dict(),
                         kw_reg = dict(linewidth=0.3, color='gray'),
                         kw_train = dict(linestyle=':', xmin=100, xmax=200),
@@ -222,7 +225,7 @@ def train_gcn(seed, epochs, num_splits):
                 best = deepcopy(mynet)
                 min_test_epoch = epoch_no
             if intersections.intersects(train_loss, test_loss):
-                animator.mpl_proc.proxy_ax.scatter(epoch_no, train_loss, s=100, marker='x', color='#3d89be')
+                mpl_proc.proxy_ax.scatter(epoch_no, train_loss, s=100, marker='x', color='#3d89be')
 
         animator.add(train_loss, test_loss)
 
@@ -276,7 +279,7 @@ def train_gcn(seed, epochs, num_splits):
     ```
     '''))
     reporter.append(FigRecord(fig, 'exp-2', f'experiments/exp-2-{N}.png'))
-    reporter.append(FigRecord(animator.mpl_proc.proxy_fig, 'exp-1', f'experiments/exp-1-{N}.png'))
+    reporter.append(FigRecord(mpl_proc.proxy_fig, 'exp-1', f'experiments/exp-1-{N}.png'))
 
     reporter.write()
 
