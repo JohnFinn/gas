@@ -102,21 +102,20 @@ class LineDrawer:
             self.ax.hlines(**self.kw_reg, **self.kw_train, y=train_loss)
             self.ax.hlines(**self.kw_reg, **self.kw_test, y=test_loss)
 
-
-def train_gcn():
-    animator = Animator()
-
-    seed = int(sys.argv[1])
+@click.command()
+@click.option('--seed', default=0, help='seed to use everywhere')
+@click.option('--epochs', default=500, help='epochs to train')
+def train_gcn(seed, epochs):
     seed_all(seed)
 
+    animator = Animator()
     graph_dataset = GasFlowGraphs()
-
     lines = LineDrawer(ax=animator.mpl_proc.proxy_ax,
-                        kw_min = dict(),
-                        kw_reg = dict(linewidth=0.3, color='gray'),
-                        kw_train = dict(linestyle=':', xmin=300, xmax=400),
-                        kw_test = dict(xmin=400, xmax=500)
-            )
+                       kw_min=dict(),
+                       kw_reg=dict(linewidth=0.3, color='gray'),
+                       kw_train=dict(linestyle=':', xmin=300, xmax=400),
+                       kw_test=dict(xmin=400, xmax=500)
+                       )
 
     for seed in range(20):
         # torch.manual_seed(seed)
@@ -175,7 +174,7 @@ def train_gcn():
 # torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
     def train_epochs():
-        for epoch in range(480):
+        for epoch in range(epochs):
             train_loss = 0
             for batch in train_loader:
                 # criterion = torch.nn.MSELoss()
