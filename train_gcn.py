@@ -49,7 +49,6 @@ class Animator:
 
     def __init__(self):
         self.mpl_proc = MplProc()
-        # self.mpl_proc.start()
         self.mpl_proc.proxy_ax.set(ylim=(0, 20), xlim=(0, 10000))
 
         def init(objs):
