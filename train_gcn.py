@@ -1,75 +1,77 @@
 #!/usr/bin/env python3
-from typing import Generator
-import random
-import os
-import sys
-import datetime as dt
-from copy import copy, deepcopy
-
 import click
-
-import numpy as np
-import pandas as pd
-import networkx as nx
-from matplotlib import pyplot
-import matplotlib
-import seaborn as sns
-
-import torch
-import torch_geometric as tg
-
-from sklearn.decomposition import PCA
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.datasets import load_iris
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import GaussianNB
-
-from mpl_proc import MplProc, ProxyObject
-
-from gf_dataset import GasFlowGraphs
-from locations import Coordinates
-from models import MyNet3, MyNet2, MyNet, cycle_loss, cycle_dst2
-from models import cycle_loss
-from report import FigRecord, StringRecord, Reporter
-
-from seed_all import seed_all
-
-from animator import Animator
-
-class LineDrawer:
-
-    def __init__(self, *, ax: matplotlib.axes.Axes, kw_reg, kw_min, kw_train, kw_test):
-        self.min_diff = float('inf')
-        self.ax = ax
-        self.kw_reg = kw_reg
-        self.kw_min = kw_min
-        self.kw_train = kw_train
-
-        class FakeHline:
-            def set(self, *args, **kwargs):
-                pass
-
-        self.kw_test = kw_test
-        self.min_train_hline, self.min_test_hline = FakeHline(), FakeHline()
-
-    def append(self, *, train_loss: float, test_loss: float):
-        crt_diff = abs(test_loss - train_loss)
-        if crt_diff < self.min_diff:
-            self.min_diff = crt_diff
-            self.min_train_hline.set(**self.kw_reg)
-            self.min_test_hline.set(**self.kw_reg)
-            self.min_train_hline = self.ax.hlines(**self.kw_train, **self.kw_min, y=train_loss)
-            self.min_test_hline = self.ax.hlines(**self.kw_test, **self.kw_min, y=test_loss)
-        else:
-            self.ax.hlines(**self.kw_reg, **self.kw_train, y=train_loss)
-            self.ax.hlines(**self.kw_reg, **self.kw_test, y=test_loss)
-
 
 @click.command()
 @click.option('--seed', default=0, help='seed to use everywhere')
 @click.option('--epochs', default=500, help='epochs to train')
 @click.option('--num-splits', default=20, help='how many dataset splits to try when building baselines')
 def train_gcn(seed, epochs, num_splits):
+    # this is made intentional for lazy loading
+    # for convenience in handle errors in argparsing faster
+    from typing import Generator
+    import random
+    import os
+    import sys
+    import datetime as dt
+    from copy import copy, deepcopy
+
+
+    import numpy as np
+    import pandas as pd
+    import networkx as nx
+    from matplotlib import pyplot
+    import matplotlib
+    import seaborn as sns
+
+    import torch
+    import torch_geometric as tg
+
+    from sklearn.decomposition import PCA
+    from sklearn.tree import DecisionTreeClassifier
+    from sklearn.datasets import load_iris
+    from sklearn.model_selection import train_test_split
+    from sklearn.naive_bayes import GaussianNB
+
+    from mpl_proc import MplProc, ProxyObject
+
+    from gf_dataset import GasFlowGraphs
+    from locations import Coordinates
+    from models import MyNet3, MyNet2, MyNet, cycle_loss, cycle_dst2
+    from models import cycle_loss
+    from report import FigRecord, StringRecord, Reporter
+
+    from seed_all import seed_all
+
+    from animator import Animator
+
+    class LineDrawer:
+
+        def __init__(self, *, ax: matplotlib.axes.Axes, kw_reg, kw_min, kw_train, kw_test):
+            self.min_diff = float('inf')
+            self.ax = ax
+            self.kw_reg = kw_reg
+            self.kw_min = kw_min
+            self.kw_train = kw_train
+
+            class FakeHline:
+                def set(self, *args, **kwargs):
+                    pass
+
+            self.kw_test = kw_test
+            self.min_train_hline, self.min_test_hline = FakeHline(), FakeHline()
+
+        def append(self, *, train_loss: float, test_loss: float):
+            crt_diff = abs(test_loss - train_loss)
+            if crt_diff < self.min_diff:
+                self.min_diff = crt_diff
+                self.min_train_hline.set(**self.kw_reg)
+                self.min_test_hline.set(**self.kw_reg)
+                self.min_train_hline = self.ax.hlines(**self.kw_train, **self.kw_min, y=train_loss)
+                self.min_test_hline = self.ax.hlines(**self.kw_test, **self.kw_min, y=test_loss)
+            else:
+                self.ax.hlines(**self.kw_reg, **self.kw_train, y=train_loss)
+                self.ax.hlines(**self.kw_reg, **self.kw_test, y=test_loss)
+
 
     print("[ Using Seed : ", seed, " ]")
     seed_all(seed)
