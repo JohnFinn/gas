@@ -31,15 +31,7 @@ from models import MyNet3, MyNet2, MyNet, cycle_loss, cycle_dst2
 from models import cycle_loss
 from report import FigRecord, StringRecord, Reporter
 
-def seed_all(seed):
-    print("[ Using Seed : ", seed, " ]")
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.cuda.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+from seed_all import seed_all
 
 class Animator:
 
@@ -105,7 +97,10 @@ class LineDrawer:
 @click.command()
 @click.option('--seed', default=0, help='seed to use everywhere')
 @click.option('--epochs', default=500, help='epochs to train')
-def train_gcn(seed, epochs):
+@click.option('--num-splits', default=20, help='how many dataset splits to try when building baselines')
+def train_gcn(seed, epochs, num_splits):
+
+    print("[ Using Seed : ", seed, " ]")
     seed_all(seed)
 
     animator = Animator()
@@ -117,7 +112,7 @@ def train_gcn(seed, epochs):
                        kw_test=dict(xmin=400, xmax=500)
                        )
 
-    for seed in range(20):
+    for seed in range(num_splits):
         # torch.manual_seed(seed)
         train_graphs, test_graphs = torch.utils.data.random_split(graph_dataset, (len(graph_dataset) - 20, 20))
 
@@ -148,7 +143,7 @@ def train_gcn(seed, epochs):
             )
 
 
-    for seed in range(20):
+    for seed in range(num_splits):
         train_graphs, test_graphs = torch.utils.data.random_split(graph_dataset, (len(graph_dataset) - 20, 20))
         gnb = GaussianNB()
         X = np.concatenate([ g.edge_attr.T for g in train_graphs ])
