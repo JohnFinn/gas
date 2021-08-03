@@ -81,11 +81,6 @@ class Animator:
 animator = Animator()
 
 
-class FakeHline:
-    def set(self, *args, **kwargs):
-        pass
-
-
 class LineDrawer:
 
     def __init__(self, *, ax: matplotlib.axes.Axes, kw_reg, kw_min, kw_train, kw_test):
@@ -94,6 +89,11 @@ class LineDrawer:
         self.kw_reg = kw_reg
         self.kw_min = kw_min
         self.kw_train = kw_train
+
+        class FakeHline:
+            def set(self, *args, **kwargs):
+                pass
+
         self.kw_test = kw_test
         self.min_train_hline, self.min_test_hline = FakeHline(), FakeHline()
 
