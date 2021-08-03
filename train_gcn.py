@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-import cProfile
-import pstats
-
 import random
 import os
+import sys
 import datetime as dt
 from copy import copy, deepcopy
 
@@ -27,7 +25,8 @@ from mpl_proc import MplProc, ProxyObject
 
 from gf_dataset import GasFlowGraphs
 from locations import Coordinates
-from models import MyNet2, MyNet, cycle_loss, cycle_dst2
+from models import MyNet3, MyNet2, MyNet, cycle_loss, cycle_dst2
+from models import cycle_loss
 from report import FigRecord, StringRecord, Reporter
 
 def seed_all(seed):
@@ -40,17 +39,18 @@ def seed_all(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-seed_all(11)
+seed = int(sys.argv[1])
+seed_all(seed)
+
 
 graph_dataset = GasFlowGraphs()
-
 
 class Animator:
 
     def __init__(self):
         self.mpl_proc = MplProc()
-        self.mpl_proc.start()
-        self.mpl_proc.proxy_ax.set(ylim=(0, 20), xlim=(0, 500))
+        # self.mpl_proc.start()
+        self.mpl_proc.proxy_ax.set(ylim=(0, 20), xlim=(0, 10000))
 
         def init(objs):
             ax = objs['ax']
@@ -59,10 +59,10 @@ class Animator:
             objs['train'], objs['test'] = [], []
 
 
-        # self.ln_train, self.ln_test = self.mpl_proc.proxy_ax.plot([], [], [], [])
-        # self.proxy_train = self.mpl_proc.new_proxy([])
-        # self.proxy_test = self.mpl_proc.new_proxy([])
-        # self.cnt = 0
+        self.ln_train, self.ln_test = self.mpl_proc.proxy_ax.plot([], [], [], [])
+        self.proxy_train = self.mpl_proc.new_proxy([])
+        self.proxy_test = self.mpl_proc.new_proxy([])
+        self.cnt = 0
         self.mpl_proc.call_function(init)
         self.proxy_ltrain = ProxyObject(self.mpl_proc.conn, 'ltrain')
         self.proxy_ltest  = ProxyObject(self.mpl_proc.conn, 'ltest')
@@ -162,9 +162,9 @@ for seed in range(20):
         train_loss=cycle_loss(y, gnb.predict(X), 12)
     )
 
-mynet = MyNet2()
+mynet = MyNet3()
 
-# good seeds: 4, 6,
+# seed_all(seed)
 train_graphs, test_graphs = torch.utils.data.random_split(graph_dataset, (len(graph_dataset) - 20, 20))
 train_loader = tg.data.DataLoader(train_graphs, batch_size=len(train_graphs))
 test_loader = tg.data.DataLoader(test_graphs, batch_size=len(test_graphs))
@@ -174,7 +174,7 @@ optimizer = torch.optim.Adam(mynet.parameters(), lr=0.001)
 # torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer)
 
 def train_epochs():
-    for epoch in range(500):
+    for epoch in range(480):
         train_loss = 0
         for batch in train_loader:
             # criterion = torch.nn.MSELoss()
@@ -185,13 +185,14 @@ def train_epochs():
             train_loss += loss.item()
 
             optimizer.zero_grad()
+            # here sth happens which leads to SIGSEGV at exit
             loss.backward()
             optimizer.step()
             # lr_scheduler.step()
         train_loss /= len(train_loader)
         yield train_loss
 
-perf_profile = cProfile.Profile()
+
 
 class IntersectionFinder:
 
@@ -238,6 +239,9 @@ for epoch_no, train_loss in enumerate(train_epochs()):
 
 # ps = pstats.Stats(perf_profile)
 # ps.print_stats()
+# import pdb
+# pdb.set_trace()
+# animator.mpl_proc.stop()
 
 
 fig: matplotlib.figure.Figure
